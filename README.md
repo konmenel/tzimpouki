@@ -1,4 +1,4 @@
-# tzimpouki bot
+# tzimpouki
 Automated gym booking in Rust.
 
 # Important Note

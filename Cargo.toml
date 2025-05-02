@@ -1,0 +1,40 @@
+[package]
+name = "gymbooking"
+version = "0.420.69"
+edition = "2021"
+default-run = "gymbooking"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = { version = "4.*", features = ["derive"] }
+reqwest = { version = "0.12.*", features = ["blocking"] }
+scraper = "0.23.*"
+time = { version = "0.3.*", features = ["formatting", "macros", "parsing"] }
+slint = { version = "1.*", optional = true }
+rodio = { version ="0.20.*", optional = true}
+time-tz = "2.*"
+serde = { version = "1.*", features = ["derive"] }
+dirs = "6.*"
+serde_json = "1.*"
+
+[build-dependencies]
+slint-build = "1.*"
+
+[target.'cfg(all(target_env = "musl", target_os = "linux"))'.dependencies]
+openssl = { version = "0.10.*", features = ["vendored"] }  # For statically linked
+
+[features]
+gui = ["dep:slint", "dep:rodio"]
+
+[profile.release]
+strip = true      # Automatically strip symbols from the binary.
+lto = true
+codegen-units = 1 #By default, Cargo specifies 16 parallel codegen units for release builds. This improves compile times, but prevents some optimizations.
+# panic = "abort"
+opt-level = 3
+
+[[bin]]
+name = "gymbooking-gui"
+required-features = ["gui"]
+path = "src/gui.rs"

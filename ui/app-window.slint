@@ -1,0 +1,294 @@
+import { Button, StandardButton, ComboBox, LineEdit, GridBox, ScrollView,
+    TextEdit, HorizontalBox, CheckBox } from "std-widgets.slint";
+
+export component SettingsWindow inherits Dialog {
+    in-out property <int> background_idx: 0;
+    in-out property <bool> enable_audio: false;
+    callback ok_settings(string, bool);
+    callback apply_settings(string, bool);
+    callback close_settings();
+    background: #181818;
+    width: 330px;
+    height: 150px;
+    title: "Settings";
+    VerticalLayout {
+        GridLayout {
+            padding: 10px;
+            spacing: 10px;
+            Row {
+                Text {
+                    text: "Backround:";
+                }
+
+                background_combo := ComboBox {
+                    model: ["Grizzly", "Ronnie"];
+                    current-index: root.background_idx;
+                }
+            }
+
+            Row {
+                Text {
+                    text: "Sound when booking:";
+                }
+
+                audio_check_box := CheckBox {
+                    checked: root.enable_audio;
+                }
+            }
+
+            Row {
+                Rectangle {
+                    opacity: 1;
+                    height: 20px;
+                }
+            }
+        }
+
+        HorizontalLayout {
+            alignment: center;
+            spacing: 0px;
+            StandardButton {
+                height: 30px;
+                width: 80px;
+                kind: ok;
+                clicked => {
+                    ok_settings(
+                        background_combo.current-value,
+                        audio_check_box.checked);
+                }
+            }
+
+            StandardButton {
+                height: 30px;
+                width: 80px;
+                kind: cancel;
+                clicked => {
+                    close_settings();
+                }
+            }
+
+            StandardButton {
+                height: 30px;
+                width: 80px;
+                kind: apply;
+                clicked => {
+                    apply_settings(
+                        background_combo.current-value,
+                        audio_check_box.checked);
+                }
+            }
+        }
+    }
+}
+
+export component App inherits Window {
+    in property <[string]> timeslots;   // Dynamic list for the time menu
+    in property <[string]> class_names; // Dynamic list for the class names
+    in property <string> curr_class: "";
+    in property <string> curr_time: "";
+    in property <string> log;
+    in property <int> background_idx;
+    in property <bool> class_box_enabled: false;
+    in-out property <string> student_id: "";
+    property <length> bradius: 15px;
+    callback submit(string, string, int, string);
+    callback update_text();
+    callback type_selected(string);
+    callback class_selected(string);
+    callback show_settings();
+    in-out property <image> bground_image;
+    property <image> grizzly_image: @image-url("../assets/kapakoulak.jpg");
+    property <image> ronnie_image: @image-url("../assets/Ronnie.jpg");
+    property <length> y0: 165px;
+    background: #181818;
+    height: 700px;
+    width: 500px;
+    title: "Gymbooking GUI";
+    default-font-size: 20px;
+    icon: @image-url("../assets/dumbbell.png");
+    // Background images
+    Rectangle {
+        ronnie := Image {
+            source: root.ronnie_image;
+            y: y0;
+            width: parent.width;
+            height: parent.height - y0;
+            visible: false;
+        }
+    }
+
+    Rectangle {
+        kapakoulak := Image {
+            source: root.grizzly_image;
+            y: y0;
+            width: parent.width;
+            height: parent.height - y0;
+            visible: true;
+        }
+    }
+
+    Timer {
+        running: true;
+        interval: 40ms;     // 25 FPS
+        triggered => {
+            if (root.background_idx == 0) {
+                kapakoulak.visible = true;
+                ronnie.visible = false;
+            } else if (root.background_idx == 1) {
+                kapakoulak.visible = false;
+                ronnie.visible = true;
+            }
+            update_text();
+        }
+    }
+
+    GridLayout {
+        padding: 10px;
+        spacing: 10px;
+        Row {
+            Rectangle {
+                opacity: 0.8;
+                background: root.background;
+                border-radius: root.bradius;
+                border-width: 2px;
+                border-color: root.background.darker(20%);
+                Text {
+                    color: white;
+                    text: "Gym or Classes:";
+                    font-size: 20px;
+                }
+            }
+
+            type_dropdown := ComboBox {
+                height: 30px;
+                model: ["Gym", "Classes"];
+                current-value: "Gym";
+                selected => {
+                    root.type_selected(self.current-value)
+                }
+            }
+        }
+
+        Row {
+            Rectangle {
+                opacity: 0.8;
+                background: root.background;
+                border-radius: root.bradius;
+                border-width: 2px;
+                border-color: root.background.darker(20%);
+                Text {
+                    color: white;
+                    text: "Select class:";
+                    font-size: 20px;
+                }
+            }
+
+            class_name_dropdown := ComboBox {
+                height: 30px;
+                model: root.class_names;
+                current-value: root.curr_class;
+                enabled: class_box_enabled;
+                selected => {
+                    class_selected(self.current-value)
+                }
+            }
+        }
+
+        Row {
+            Rectangle {
+                opacity: 0.8;
+                background: root.background;
+                border-radius: root.bradius;
+                border-width: 2px;
+                border-color: root.background.darker(20%);
+                Text {
+                    color: white;
+                    text: "Select Time:";
+                    font-size: 20px;
+                }
+            }
+
+            time_dropdown := ComboBox {
+                height: 30px;
+                model: root.timeslots;
+                current-value: root.curr_time;
+            }
+        }
+
+        Row {
+            Rectangle {
+                opacity: 0.8;
+                background: root.background;
+                border-radius: root.bradius;
+                border-width: 2px;
+                border-color: root.background.darker(20%);
+                Text {
+                    color: white;
+                    text: "Student No:";
+                    font-size: 20px;
+                }
+            }
+
+            student_id_box := LineEdit {
+                height: 30px;
+                text: root.student_id;
+                input-type: number;
+                accepted => {
+                    root.submit(
+                        time_dropdown.current-value,
+                        student_id_box.text,
+                        type_dropdown.current-index,
+                        class_name_dropdown.current-value);
+                }
+            }
+        }
+
+        Row {
+            Rectangle {
+                opacity: 1;
+                height: 90px;
+            }
+        }
+
+        Row {
+            TextEdit {
+                font-size: 14px;
+                text: log;
+                read-only: true;
+                colspan: 2;
+                opacity: 0.7;
+                width: root.width - 20px;
+            }
+        }
+
+        Row {
+            Rectangle {
+                opacity: 1;
+                width: root.width * 0.3;
+            }
+
+            HorizontalLayout {
+                spacing: 120px;
+                Button {
+                    height: 40px;
+                    text: "Submit";
+                    width: root.width * 0.3;
+                    clicked => {
+                        root.submit(
+                        time_dropdown.current-value,
+                        student_id_box.text,
+                        type_dropdown.current-index,
+                        class_name_dropdown.current-value);
+                    }
+                }
+
+                Button {
+                    icon: @image-url("../assets/cog-white.svg");
+                    clicked => {
+                        show-settings();
+                    }
+                }
+            }
+        }
+    }
+}

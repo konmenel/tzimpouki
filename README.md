@@ -1,4 +1,4 @@
-# tzimpouki
+# tzimpouking
 Automated gym booking in Rust.
 
 # Important Note
